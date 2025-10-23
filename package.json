@@ -1,0 +1,34 @@
+{
+  "name": "copilot-test-scripts",
+  "version": "1.0.0",
+  "description": "Repository for testing scripts and code blocks with GitHub Copilot",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:python": "cd tests && python3 -m pytest -v",
+    "lint:js": "eslint scripts/javascript/**/*.js",
+    "run:hello-js": "node scripts/javascript/hello_world.js",
+    "run:calc-js": "node scripts/javascript/calculator.js",
+    "run:hello-py": "python3 scripts/python/hello_world.py",
+    "run:calc-py": "python3 scripts/python/calculator.py"
+  },
+  "keywords": [
+    "testing",
+    "copilot",
+    "scripts",
+    "examples"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  }
+}

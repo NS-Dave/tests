@@ -1,0 +1,77 @@
+name: Test Scripts
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  test-python:
+    name: Test Python Scripts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run Python tests
+        run: python -m unittest discover tests -v
+      
+      - name: Test Python scripts
+        run: |
+          python3 scripts/python/hello_world.py
+          python3 scripts/python/calculator.py
+
+  test-javascript:
+    name: Test JavaScript Scripts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run JavaScript tests
+        run: npm test
+      
+      - name: Test JavaScript scripts
+        run: |
+          node scripts/javascript/hello_world.js
+          node scripts/javascript/calculator.js
+
+  test-shell:
+    name: Test Shell Scripts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Make scripts executable
+        run: chmod +x scripts/shell/*.sh
+      
+      - name: Test shell scripts
+        run: |
+          ./scripts/shell/hello_world.sh
+          ./scripts/shell/system_info.sh
