@@ -1,107 +1,146 @@
-# Metrc Package Combiner
+# Test Scripts Repository
 
-This repository contains a Google Apps Script to combine multiple Metrc Excel package export files into a single Google Sheets spreadsheet.
+A comprehensive repository for testing scripts and code blocks with GitHub Copilot.
 
-## Overview
-
-The script processes Excel files from a Google Drive folder, where each file represents package data from Metrc (seed-to-sale tracking system) for different licenses and package statuses. It combines all data into a unified spreadsheet while preserving license numbers and package status information from the filenames.
-
-## Requirements
-
-### Google Apps Script Setup
-1. **Enable Drive API**: In your Apps Script project, go to:
-   - `Resources` > `Advanced Google Services` > Enable `Drive API`
-   - Also enable it in the Google Cloud Console for your project
-
-### File Naming Convention
-Files must follow this naming pattern:
-```
-Metrc-Massachusetts-[License No.]-Packages-[Package Status].xlsx
-```
-
-**Example**: `Metrc-Massachusetts-MC281599-Packages-Active.xlsx`
-
-### Supported Values
-- **License Numbers**: MC281599, MP281433 (or any alphanumeric license)
-- **Package Statuses**: Active, Inactive, In-Transit, Transferred
-
-## How It Works
-
-1. **Reads Excel files** from the specified Google Drive folder
-2. **Converts each Excel file** to Google Sheets format using the Drive API
-3. **Maps columns** according to package status schemas (each status has different columns)
-4. **Combines all data** into a single spreadsheet with standardized column names
-5. **Creates a summary sheet** showing row counts per license/status combination
-6. **Cleans up** temporary converted files
-
-## Column Mapping
-
-The script handles different schemas for each package status:
-
-### Active Packages
-- Contains: Location, Lab Test Status
-- Missing: Patient, Finished, Discontinued, etc.
-
-### Inactive Packages  
-- Contains: Patient, Administrative Recall
-- Missing: Location, Finished, Discontinued, etc.
-
-### In-Transit Packages
-- Contains: Patient, Administrative Recall, Finished, Discontinued
-- Missing: Location, Gross Weight, etc.
-
-### Transferred Packages
-- Contains: Destination License, Manifest Number, Transfer Status, Production Batch info
-- Uses different column names (e.g., "Package" instead of "Tag")
-
-## Output
-
-The script creates a new Google Sheets spreadsheet with:
-
-1. **Main Sheet**: Combined data with all rows from all files
-   - Columns: 33 standardized columns including License_No, Package_Status, Processing_Date, etc.
-   
-2. **Summary Sheet**: Overview of processed data
-   - Columns: License_No, Package_Status, Row_Count
-
-## Installation & Usage
-
-1. Open [Google Apps Script](https://script.google.com)
-2. Create a new project
-3. Enable the Drive API (see Requirements above)
-4. Copy the contents of `combineMetrcPackages.txt` into the script editor
-5. Update the `FOLDER_ID` constant with your Google Drive folder ID
-6. Run the `combineMetrcPackages()` function
-7. Authorize the script when prompted
-8. Check the execution log for progress and the output spreadsheet link
-
-## Error Handling
-
-The script includes robust error handling:
-- Skips files that don't match the naming convention
-- Handles files with no data
-- Logs errors for individual files without stopping the entire process
-- Cleans up temporary files even if errors occur
-
-## Original Issue
-
-The original script was failing with errors like:
-```
-Exception: Service Spreadsheets failed while accessing document with id...
-```
-
-This was caused by trying to open Excel files directly as Google Sheets without proper conversion. The fix uses the Drive API's `insert()` method with `convert: true` to properly convert Excel files to Google Sheets format before processing.
-
-## Folder Structure
+## 📁 Repository Structure
 
 ```
-Google Drive Folder (ID: 1uzk2fa0-DzgHXlSPQNuw86YaVSxPBhaN)
-├── Metrc-Massachusetts-MC281599-Packages-Active.xlsx
-├── Metrc-Massachusetts-MC281599-Packages-Inactive.xlsx
-├── Metrc-Massachusetts-MC281599-Packages-InTransit.xlsx
-├── Metrc-Massachusetts-MC281599-Packages-Transferred.xlsx
-├── Metrc-Massachusetts-MP281433-Packages-Active.xlsx
-├── Metrc-Massachusetts-MP281433-Packages-Inactive.xlsx
-├── Metrc-Massachusetts-MP281433-Packages-InTransit.xlsx
-└── Metrc-Massachusetts-MP281433-Packages-Transferred.xlsx
+.
+├── scripts/          # Executable scripts in various languages
+│   ├── python/       # Python scripts
+│   ├── javascript/   # JavaScript/Node.js scripts
+│   ├── shell/        # Bash/shell scripts
+│   └── misc/         # Other language scripts
+├── tests/            # Test files for the scripts
+├── examples/         # Code block examples and snippets
+└── docs/             # Additional documentation
 ```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.7+
+- Node.js 14+
+- Bash shell
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/NS-Dave/tests.git
+cd tests
+```
+
+2. Install Node.js dependencies:
+```bash
+npm install
+```
+
+## 🧪 Running Scripts
+
+### Python Scripts
+```bash
+# Run hello world
+python3 scripts/python/hello_world.py
+
+# Run calculator
+python3 scripts/python/calculator.py
+```
+
+### JavaScript Scripts
+```bash
+# Run hello world
+node scripts/javascript/hello_world.js
+
+# Run calculator
+node scripts/javascript/calculator.js
+
+# Or use npm scripts
+npm run run:hello-js
+npm run run:calc-js
+```
+
+### Shell Scripts
+```bash
+# Make scripts executable
+chmod +x scripts/shell/*.sh
+
+# Run hello world
+./scripts/shell/hello_world.sh
+
+# Run system info
+./scripts/shell/system_info.sh
+```
+
+## 🧪 Running Tests
+
+### Python Tests
+```bash
+# Run all Python tests
+python3 -m unittest discover tests
+
+# Run specific test
+python3 tests/test_calculator.py
+```
+
+### JavaScript Tests
+```bash
+# Run all Jest tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+
+# Run in watch mode
+npm run test:watch
+```
+
+## 📚 Available Scripts
+
+### Python Scripts
+- `hello_world.py` - Simple greeting script
+- `calculator.py` - Basic calculator operations
+
+### JavaScript Scripts
+- `hello_world.js` - Simple greeting script
+- `calculator.js` - Basic calculator operations
+
+### Shell Scripts
+- `hello_world.sh` - Simple greeting script
+- `system_info.sh` - Display system information
+
+## 📖 Examples
+
+Check the `examples/` directory for:
+- `code_blocks.md` - Various code block examples in different languages
+- `snippets.md` - Common code snippets and patterns
+
+## 🤝 Contributing
+
+This is a test repository for Copilot experimentation. Feel free to:
+- Add new scripts in any language
+- Create new test files
+- Add example code blocks
+- Improve documentation
+
+## 📝 Testing with Copilot
+
+This repository is designed to test:
+1. **Script Generation** - Let Copilot suggest new scripts
+2. **Test Creation** - Generate tests for existing scripts
+3. **Code Completion** - Test autocomplete features
+4. **Refactoring** - Improve existing code with Copilot
+5. **Documentation** - Generate comments and docs
+
+## 🎯 Use Cases
+
+- Learning GitHub Copilot features
+- Testing Copilot's code generation capabilities
+- Experimenting with different programming languages
+- Creating a reference library of common patterns
+- Validating Copilot suggestions
+
+## 📄 License
+
+MIT License - feel free to use this repository for learning and testing.
