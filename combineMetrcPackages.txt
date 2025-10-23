@@ -1,0 +1,154 @@
+function combineMetrcPackages() {
+  const FOLDER_ID = '1uzk2fa0-DzgHXlSPQNuw86YaVSxPBhaN';
+  const SPREADSHEET_NAME = `Metrc_Combined_Packages_${new Date().toISOString().slice(0,10)}`;
+  
+  console.log('🚀 Starting Metrc Package Combiner...');
+  
+  // Get Excel files
+  const folder = DriveApp.getFolderById(FOLDER_ID);
+  const files = folder.getFiles();
+  let excelFiles = [];
+  
+  while (files.hasNext()) {
+    const file = files.next();
+    if (file.getName().endsWith('.xlsx')) {
+      excelFiles.push(file);
+    }
+  }
+  
+  console.log(`📊 FOUND ${excelFiles.length} Excel files!`);
+  
+  // Fix status names
+  function fixStatus(status) {
+    if (status === 'InTransit') return 'In-Transit';
+    return status;
+  }
+  
+  function parseFilename(filename) {
+    const pattern = /Metrc-Massachusetts-([A-Z0-9]+)-Packages-([A-Za-z-]+)/;
+    const match = filename.match(pattern);
+    if (match) return { license: match[1], status: fixStatus(match[2]) };
+    return null;
+  }
+  
+  // Column mapping
+  const COLUMN_MAPPING = {
+    'Active': {'Tag':'Tag', 'Source Harvest(s)':'Source_Harvests', 'Source Package(s)':'Source_Packages', 'Source Processing Job(s)':'Source_Processing_Jobs', 'Location':'Location', 'Sublocation':'Sublocation', 'Item':'Item', 'Category':'Category', 'Item Strain':'Item_Strain', 'Quantity':'Quantity', 'Unit Of Measure':'Unit_Of_Measure', 'Packaged Date':'Packaged_Date', 'Lab Test Status':'Lab_Test_Status', 'Administrative Hold':'Administrative_Hold'},
+    'Inactive': {'Tag':'Tag', 'Source Harvest(s)':'Source_Harvests', 'Source Package(s)':'Source_Packages', 'Source Processing Job(s)':'Source_Processing_Jobs', 'Sublocation':'Sublocation', 'Patient':'Patient', 'Item':'Item', 'Category':'Category', 'Item Strain':'Item_Strain', 'Quantity':'Quantity', 'Unit Of Measure':'Unit_Of_Measure', 'Packaged Date':'Packaged_Date', 'Received':'Received', 'Administrative Hold':'Administrative_Hold', 'Administrative Recall':'Administrative_Recall'},
+    'In-Transit': {'Tag':'Tag', 'Source Harvest(s)':'Source_Harvests', 'Source Package(s)':'Source_Packages', 'Source Processing Job(s)':'Source_Processing_Jobs', 'Sublocation':'Sublocation', 'Patient':'Patient', 'Item':'Item', 'Category':'Category', 'Item Strain':'Item_Strain', 'Quantity':'Quantity', 'Unit Of Measure':'Unit_Of_Measure', 'Packaged Date':'Packaged_Date', 'Received':'Received', 'Administrative Hold':'Administrative_Hold', 'Administrative Recall':'Administrative_Recall', 'Finished':'Finished', 'Discontinued':'Discontinued'},
+    'Transferred': {'Package':'Tag', 'Source Harvest':'Source_Harvests', 'Source Package':'Source_Packages', 'Sublocation':'Sublocation', 'Item':'Item', 'Category':'Category', 'Item Strain':'Item_Strain', 'Received Quantity':'Quantity', 'Gross Weight':'Gross_Weight', 'Shipped Quantity':'Shipped_Quantity', 'Source Production Batch':'Source_Production_Batch', 'Production Batch':'Production_Batch', 'Production Batch Number':'Production_Batch_Number', 'Transferred Lab Testing State':'Lab_Test_Status', 'Received Date':'Received', 'Receiver Wholesale Price':'Receiver_Wholesale_Price', 'Shipper Wholesale Price':'Shipper_Wholesale_Price', 'Finished':'Finished', 'Discontinued':'Discontinued', 'Manifest Number':'Manifest_Number', 'Status':'Transfer_Status', 'Destination License':'Destination_License', 'Destination Facility':'Destination_Facility'}
+  };
+  
+  const allHeaders = ['License_No','Package_Status','Processing_Date','Tag','Source_Harvests','Source_Packages','Source_Processing_Jobs','Location','Sublocation','Patient','Item','Category','Item_Strain','Quantity','Unit_Of_Measure','Packaged_Date','Received','Lab_Test_Status','Administrative_Hold','Administrative_Recall','Finished','Discontinued','Gross_Weight','Shipped_Quantity','Source_Production_Batch','Production_Batch','Production_Batch_Number','Receiver_Wholesale_Price','Shipper_Wholesale_Price','Manifest_Number','Transfer_Status','Destination_License','Destination_Facility'];
+  
+  let allData = [];
+  let summaryData = [];
+  
+  excelFiles.forEach((file, index) => {
+    const filename = file.getName();
+    console.log(`\n📁 [${index+1}/${excelFiles.length}] ${filename}`);
+    
+    const parsed = parseFilename(filename);
+    if (!parsed || !COLUMN_MAPPING[parsed.status]) {
+      console.log(`   ⚠️ Invalid filename`);
+      return;
+    }
+    
+    console.log(`   License: ${parsed.license} | Status: ${parsed.status}`);
+    
+    try {
+      // **FINAL FIX: Copy & Convert Excel to Google Sheets**
+      const convertedFile = DriveApp.getFileById(file.getId()).makeCopy(`TEMP_${filename}`, folder);
+      convertedFile.setName(`TEMP_${filename}`);
+      
+      // Convert to Google Sheets
+      const resource = { 
+        title: `TEMP_${filename}`,
+        mimeType: MimeType.GOOGLE_SHEETS 
+      };
+      
+      // Wait a moment for conversion
+      Utilities.sleep(1000);
+      
+      const tempSpreadsheet = SpreadsheetApp.openById(convertedFile.getId());
+      const sheet = tempSpreadsheet.getSheets()[0];
+      
+      // Force refresh
+      SpreadsheetApp.flush();
+      Utilities.sleep(2000);
+      
+      const lastRow = sheet.getLastRow();
+      const lastCol = sheet.getLastColumn();
+      
+      console.log(`   Rows: ${lastRow}, Cols: ${lastCol}`);
+      
+      if (lastRow <= 1) {
+        console.log(`   ⚠️ No data`);
+        DriveApp.getFileById(convertedFile.getId()).setTrashed(true);
+        return;
+      }
+      
+      const data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+      const headers = data[0];
+      console.log(`   Headers: ${headers.slice(0, 3).join(', ')}...`);
+      
+      const mapping = COLUMN_MAPPING[parsed.status];
+      const mappedData = [];
+      
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const newRow = new Array(33).fill('');
+        
+        newRow[0] = parsed.license;
+        newRow[1] = parsed.status;
+        newRow[2] = new Date();
+        
+        Object.entries(mapping).forEach(([oldCol, newCol]) => {
+          const colIndex = headers.indexOf(oldCol);
+          if (colIndex !== -1) {
+            const newColIndex = allHeaders.indexOf(newCol);
+            if (newColIndex !== -1) newRow[newColIndex] = row[colIndex];
+          }
+        });
+        
+        mappedData.push(newRow);
+      }
+      
+      allData.push(...mappedData);
+      summaryData.push([parsed.license, parsed.status, mappedData.length-1]);
+      console.log(`   ✅ ${mappedData.length-1} rows`);
+      
+      // Cleanup
+      DriveApp.getFileById(convertedFile.getId()).setTrashed(true);
+      
+    } catch(e) {
+      console.log(`   ❌ Error: ${e.toString()}`);
+    }
+  });
+  
+  if (allData.length === 0) {
+    console.log('❌ NO DATA PROCESSED');
+    return;
+  }
+  
+  // Create output
+  const output = SpreadsheetApp.create(SPREADSHEET_NAME);
+  const sheet = output.getActiveSheet();
+  
+  sheet.getRange(1,1,1,33).setValues([allHeaders]);
+  sheet.getRange(2,1,allData.length,33).setValues(allData);
+  
+  // Summary sheet
+  const summarySheet = output.insertSheet('Summary');
+  summarySheet.getRange(1,1,1,3).setValues([['License_No','Package_Status','Row_Count']]);
+  summarySheet.getRange(2,1,summaryData.length,3).setValues(summaryData);
+  
+  // Format
+  sheet.autoResizeColumns(1,33);
+  summarySheet.autoResizeColumns(1,3);
+  
+  console.log(`\n🎉 SUCCESS! ${allData.length} TOTAL ROWS`);
+  console.log(`🔗 https://docs.google.com/spreadsheets/d/${output.getId()}`);
+  
+  SpreadsheetApp.setActiveSpreadsheet(output);
+}
