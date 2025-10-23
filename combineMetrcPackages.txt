@@ -1,3 +1,18 @@
+/**
+ * Combines multiple Metrc Excel package files from a Google Drive folder into a single spreadsheet.
+ * 
+ * REQUIREMENTS:
+ * - Drive API must be enabled in Apps Script (Resources > Advanced Google Services > Drive API)
+ * - Files must follow naming convention: Metrc-Massachusetts-[License No.]-Packages-[Package Status]
+ * - Supported statuses: Active, Inactive, In-Transit, Transferred
+ * 
+ * The script:
+ * 1. Reads Excel files from the specified folder
+ * 2. Converts them to Google Sheets format
+ * 3. Maps columns according to package status schemas
+ * 4. Combines all data into a single output spreadsheet
+ * 5. Creates a summary sheet with row counts per license/status
+ */
 function combineMetrcPackages() {
   const FOLDER_ID = '1uzk2fa0-DzgHXlSPQNuw86YaVSxPBhaN';
   const SPREADSHEET_NAME = `Metrc_Combined_Packages_${new Date().toISOString().slice(0,10)}`;
@@ -57,25 +72,21 @@ function combineMetrcPackages() {
     console.log(`   License: ${parsed.license} | Status: ${parsed.status}`);
     
     try {
-      // **FINAL FIX: Copy & Convert Excel to Google Sheets**
-      const convertedFile = DriveApp.getFileById(file.getId()).makeCopy(`TEMP_${filename}`, folder);
-      convertedFile.setName(`TEMP_${filename}`);
-      
-      // Convert to Google Sheets
-      const resource = { 
+      // Convert Excel file to Google Sheets
+      const blob = file.getBlob();
+      const resource = {
         title: `TEMP_${filename}`,
-        mimeType: MimeType.GOOGLE_SHEETS 
+        mimeType: MimeType.GOOGLE_SHEETS,
+        parents: [{id: FOLDER_ID}]
       };
       
-      // Wait a moment for conversion
-      Utilities.sleep(1000);
+      const convertedFile = Drive.Files.insert(resource, blob, {convert: true});
       
-      const tempSpreadsheet = SpreadsheetApp.openById(convertedFile.getId());
-      const sheet = tempSpreadsheet.getSheets()[0];
-      
-      // Force refresh
-      SpreadsheetApp.flush();
+      // Wait for conversion to complete
       Utilities.sleep(2000);
+      
+      const tempSpreadsheet = SpreadsheetApp.openById(convertedFile.id);
+      const sheet = tempSpreadsheet.getSheets()[0];
       
       const lastRow = sheet.getLastRow();
       const lastCol = sheet.getLastColumn();
@@ -84,7 +95,7 @@ function combineMetrcPackages() {
       
       if (lastRow <= 1) {
         console.log(`   ⚠️ No data`);
-        DriveApp.getFileById(convertedFile.getId()).setTrashed(true);
+        Drive.Files.remove(convertedFile.id);
         return;
       }
       
@@ -115,11 +126,11 @@ function combineMetrcPackages() {
       }
       
       allData.push(...mappedData);
-      summaryData.push([parsed.license, parsed.status, mappedData.length-1]);
-      console.log(`   ✅ ${mappedData.length-1} rows`);
+      summaryData.push([parsed.license, parsed.status, mappedData.length]);
+      console.log(`   ✅ ${mappedData.length} rows`);
       
-      // Cleanup
-      DriveApp.getFileById(convertedFile.getId()).setTrashed(true);
+      // Cleanup - delete the temporary converted file
+      Drive.Files.remove(convertedFile.id);
       
     } catch(e) {
       console.log(`   ❌ Error: ${e.toString()}`);
